@@ -1,6 +1,7 @@
 import type { NextPage } from 'next'
 import { LegacyRef, useEffect, useRef, useState } from 'react'
-import { Box } from '@chakra-ui/react'
+import { Box, Button, Heading, HStack, Icon, VStack } from '@chakra-ui/react'
+import { HiCloudUpload } from 'react-icons/hi'
 
 const Home: NextPage = () => {
 	
@@ -16,7 +17,7 @@ const Home: NextPage = () => {
 	const renderCanvas = (canvas: LegacyRef<HTMLCanvasElement>) => {
 		// @ts-ignore
 		const ctx = canvas.getContext('2d')
-		const pixelRatio = 40 / 128
+		const pixelRatio = 12 / 128
 		let w = 500 * pixelRatio
 		let h = 500 * pixelRatio
 		const img = new Image()
@@ -39,13 +40,19 @@ const Home: NextPage = () => {
 	}
 
 	return(
-		<>
-			<button onClick={(event) => {
-				event.preventDefault()
-				fileInputRef.current?.click()
-			}}>
-				Add Image
-			</button>
+		<Box overflowX={'hidden'}>
+			<HStack px={{ base: 4 }} py={{ base: 4 }} justifyContent={'space-between'}>
+				<Heading>pixel.mint</Heading>
+				<Button>Connect Wallet</Button>
+			</HStack>
+			<Box px={{ base: 4}} py={{ base: 4}}>
+				<VStack border={'4px'} borderStyle={'dotted'} as='button' onClick={(e) => {
+					e.preventDefault()
+					fileInputRef.current?.click()
+				}}>
+					<Icon as={HiCloudUpload}/>
+				</VStack>
+			</Box>
 			<input 
 				type="file" 
 				accept='img/*'
@@ -67,7 +74,7 @@ const Home: NextPage = () => {
 					height={500}
 					width={500}
 				/>
-		</>
+		</Box>
 	)
 }
 
