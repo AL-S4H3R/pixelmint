@@ -1,5 +1,6 @@
 import type { NextPage } from 'next'
 import { LegacyRef, useEffect, useRef, useState } from 'react'
+import { Box } from '@chakra-ui/react'
 
 const Home: NextPage = () => {
 	
