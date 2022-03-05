@@ -20,10 +20,10 @@ const pixelFormat: IPixelFormat = {
     ratio: 2 / 128,
 }
 
-const canvas = createCanvas(format.width, format.height)
-const ctx = canvas.getContext('2d')
 
 export const draw = (_imgObject: any) => {
+    const canvas = createCanvas(format.width, format.height)
+    const ctx = canvas.getContext('2d')
     let size = pixelFormat.ratio;
     let w = canvas.width * size;
     let h = canvas.height * size;
