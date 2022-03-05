@@ -1,32 +1,40 @@
 import type { NextPage } from 'next'
 import { LegacyRef, useEffect, useRef, useState } from 'react'
-import { Box, Button, Heading, HStack, Icon, VStack } from '@chakra-ui/react'
+import { Box, Button, Heading, HStack, Icon, Img, Input, Stack, Text, Textarea, VStack } from '@chakra-ui/react'
 import { HiCloudUpload } from 'react-icons/hi'
 
 const Home: NextPage = () => {
 	
 	const [preview, setPreview] = useState('')
+	const [finalImage, setFinalImage] = useState('')
 	
-	const fileInputRef = useRef<HTMLInputElement>()
-	const canvasRef = useRef<LegacyRef<HTMLCanvasElement>>()
-
+	const fileInputRef = useRef<HTMLInputElement>(null)
+	const canvasRef = useRef<HTMLCanvasElement>(null)
+	const titleInputRef = useRef<HTMLInputElement>(null)
+	const descriptionInputRef = useRef<HTMLInputElement>(null)
+	
 	useEffect(() => {
-		renderCanvas(canvasRef.current!)
+		// @ts-ignore
+		renderCanvas(canvasRef.current)
 	}, [preview, canvasRef])
 
-	const renderCanvas = (canvas: LegacyRef<HTMLCanvasElement>) => {
-		// @ts-ignore
+	const renderCanvas = (canvas: HTMLCanvasElement) => {
 		const ctx = canvas.getContext('2d')
-		const pixelRatio = 12 / 128
-		let w = 500 * pixelRatio
-		let h = 500 * pixelRatio
-		const img = new Image()
-		img.src = preview
-		ctx.imageSmoothingEnabled = false
-		img.onload = async () => {
-			await ctx.drawImage(img, 0, 0, w, h)
-			const result = await ctx.drawImage(canvas, 0, 0, w, h, 0, 0, 500, 500)
-			console.log(result)
+		if(ctx){
+			const pixelRatio = 120 / 128
+			let w = 500 * pixelRatio
+			let h = 500 * pixelRatio
+			const img = new Image()
+			img.src = preview
+			ctx.imageSmoothingEnabled = false
+			img.onload = async () => {
+				await ctx.drawImage(img, 0, 0, w, h)
+				const result = await ctx.drawImage(canvas, 0, 0, w, h, 0, 0, 500, 500)
+				// @ts-ignore
+				const pixelatedImage = canvas.toDataURL()
+				console.log(pixelatedImage)
+				setFinalImage(pixelatedImage)
+			}
 		}
 	}
 
@@ -42,17 +50,21 @@ const Home: NextPage = () => {
 	return(
 		<Box overflowX={'hidden'}>
 			<HStack px={{ base: 4 }} py={{ base: 4 }} justifyContent={'space-between'}>
-				<Heading>pixel.mint</Heading>
+				<Heading letterSpacing={'wider'}>pixel.mint</Heading>
 				<Button>Connect Wallet</Button>
 			</HStack>
-			<Box px={{ base: 4}} py={{ base: 4}}>
-				<VStack border={'4px'} borderStyle={'dotted'} as='button' onClick={(e) => {
-					e.preventDefault()
-					fileInputRef.current?.click()
-				}}>
-					<Icon as={HiCloudUpload}/>
-				</VStack>
-			</Box>
+			{
+				!finalImage &&
+				<Box px={{ base: 4}} py={{ base: 4}}>
+					<VStack border={'4px'} borderStyle={'dotted'} py={{base: 4}} onClick={(e) => {
+						e.preventDefault()
+						fileInputRef.current?.click()
+					}}>
+						<Icon as={HiCloudUpload} fontSize={'8xl'}/>
+						<Text>Please upload your image to pixelate</Text>
+					</VStack>
+				</Box>
+			}
 			<input 
 				type="file" 
 				accept='img/*'
@@ -67,13 +79,29 @@ const Home: NextPage = () => {
 					}
 				}}
 			/>
-			{/* <img src={canvasPreview} width="250" height={'250'}/> */} 
+			<Box px={{ base: 4}}>
 				<canvas
 					// @ts-ignore 
 					ref={canvasRef}
 					height={500}
 					width={500}
+					style={{ display: 'none' }}
 				/>
+				{
+					finalImage &&
+					<Stack>
+						<Img src={finalImage} width={'full'} h={'full'} rounded={'xl'}/>
+						<Button w={"full"}>Change Image</Button>
+					</Stack>
+				}
+			</Box>
+			<Stack px={{ base: 4 }} py={{ base: 4 }} spacing={'4'}>
+				<Input type={'text'} placeholder={'Name your NFT'} border={'2px'}/>
+				<Textarea placeholder='Describe your NFT'/>
+			</Stack>
+			<Stack px={{ base: 4 }}>
+				<Button>Generate NFT</Button>
+			</Stack>
 		</Box>
 	)
 }
