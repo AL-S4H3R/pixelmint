@@ -12,7 +12,8 @@ const Home: NextPage = () => {
 	
 	const [preview, setPreview] = useState('')
 	const [finalImage, setFinalImage] = useState('')
-	
+	const [tokenUri, setTokenUri] = useState('')
+
 	const fileInputRef = useRef<HTMLInputElement>(null)
 	const canvasRef = useRef<HTMLCanvasElement>(null)
 	const titleInputRef = useRef<HTMLInputElement>(null)
@@ -57,6 +58,9 @@ const Home: NextPage = () => {
 				const result = await ctx.drawImage(canvas, 0, 0, w, h, 0, 0, 500, 500)
 				// @ts-ignore
 				const pixelatedImage = canvas.toDataURL()
+				canvas.toBlob((blob) => {
+					uploadToIpfs(blob!)
+				})
 				console.log(pixelatedImage)
 				setFinalImage(pixelatedImage)
 			}
@@ -72,27 +76,28 @@ const Home: NextPage = () => {
 		fileReader.readAsDataURL(image)
 	}
 
-	const uploadToIpfs = async () => {
+	const uploadToIpfs = async (bufferImage: Blob) => {
         const client = create({ url: 'https://ipfs.infura.io:5001/api/v0' })
-        const { cid: imageCid } = await client.add(new Blob([finalImage], { type: 'image/png' }))
+		// const bufferImage = URL.createObjectURL(new Blob([finalImage]))
+		// console.log(bufferImage)
+        const { cid: imageCid } = await client.add(bufferImage)
 		console.log(imageCid.toString())
 		const metadata = {
             name: 'Shards of Polygon - OG',
             description: `An NFT family that consists of memorabilia enclosed in a crystal ether with a polygonal shape by Dehidden`,
-            image: 'https://ipfs.io/ipfs/QmcQ6pgjeAEa3m1ugL7YUJezCyH4zvUGXiZbTG3NoiLiPV'
+            image: `ipfs://${imageCid.toString()}`
         }
         const file = new Blob([JSON.stringify(metadata)],{ type: 'application/json' })
         const { cid } = await client.add(file)
         console.log(cid.toString())
-        return cid
+        setTokenUri(`ipfs://${cid.toString()}`)
     }
 
 	const mintNft = async () => {
-		const ipfsId = await uploadToIpfs()
 		const signer = await library.getSigner()
 		const contract = new ethers.Contract(DEPLOYED_ADDRESS, ABI, signer)
 		console.log(contract)
-		const tx = await contract.safeMint(account, ipfsId.toString())
+		const tx = await contract.safeMint(account, tokenUri)
 		if(tx){
 			await tx.wait()
 			console.log(tx)
