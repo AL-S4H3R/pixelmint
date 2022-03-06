@@ -80,17 +80,22 @@ const Home: NextPage = () => {
         const client = create({ url: 'https://ipfs.infura.io:5001/api/v0' })
 		// const bufferImage = URL.createObjectURL(new Blob([finalImage]))
 		// console.log(bufferImage)
-        const { cid: imageCid } = await client.add(bufferImage)
-		console.log(imageCid.toString())
-		const metadata = {
-            name: 'Shards of Polygon - OG',
-            description: `An NFT family that consists of memorabilia enclosed in a crystal ether with a polygonal shape by Dehidden`,
-            image: `ipfs://${imageCid.toString()}`
-        }
-        const file = new Blob([JSON.stringify(metadata)],{ type: 'application/json' })
-        const { cid } = await client.add(file)
-        console.log(cid.toString())
-        setTokenUri(`ipfs://${cid.toString()}`)
+		const name = titleInputRef.current?.value
+		const description = descriptionInputRef.current?.value
+		
+		if(name && description){
+			const { cid: imageCid } = await client.add(bufferImage)
+			console.log(imageCid.toString())
+			const metadata = {
+				name,
+				description,
+				image: `ipfs://${imageCid.toString()}`
+			}
+			const file = new Blob([JSON.stringify(metadata)],{ type: 'application/json' })
+			const { cid } = await client.add(file)
+			console.log(cid.toString())
+			setTokenUri(`ipfs://${cid.toString()}`)
+		}
     }
 
 	const mintNft = async () => {
