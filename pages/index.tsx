@@ -4,6 +4,9 @@ import { Box, Button, Heading, HStack, Icon, Img, Input, Stack, Text, Textarea, 
 import { HiCloudUpload } from 'react-icons/hi'
 import { useWeb3React } from '@web3-react/core'
 import { injected, walletConnect } from '../src/providers/DAppProvider'
+import { create } from 'ipfs-http-client'
+import { ethers } from 'ethers'
+import { ABI, DEPLOYED_ADDRESS } from '../src/utils/contract'
 
 const Home: NextPage = () => {
 	
@@ -15,7 +18,7 @@ const Home: NextPage = () => {
 	const titleInputRef = useRef<HTMLInputElement>(null)
 	const descriptionInputRef = useRef<HTMLTextAreaElement>(null)
 	
-	const { activate, active, account } = useWeb3React()
+	const { activate, active, account, library } = useWeb3React()
 
 	useEffect(() => {
 		// @ts-ignore
@@ -43,7 +46,7 @@ const Home: NextPage = () => {
 	const renderCanvas = (canvas: HTMLCanvasElement) => {
 		const ctx = canvas.getContext('2d')
 		if(ctx){
-			const pixelRatio = 120 / 128
+			const pixelRatio = 40 / 128
 			let w = 500 * pixelRatio
 			let h = 500 * pixelRatio
 			const img = new Image()
@@ -67,6 +70,33 @@ const Home: NextPage = () => {
 			setPreview(imgUrl)
 		}
 		fileReader.readAsDataURL(image)
+	}
+
+	const uploadToIpfs = async () => {
+        const client = create({ url: 'https://ipfs.infura.io:5001/api/v0' })
+        const { cid: imageCid } = await client.add(new Blob([finalImage], { type: 'image/png' }))
+		console.log(imageCid.toString())
+		const metadata = {
+            name: 'Shards of Polygon - OG',
+            description: `An NFT family that consists of memorabilia enclosed in a crystal ether with a polygonal shape by Dehidden`,
+            image: 'https://ipfs.io/ipfs/QmcQ6pgjeAEa3m1ugL7YUJezCyH4zvUGXiZbTG3NoiLiPV'
+        }
+        const file = new Blob([JSON.stringify(metadata)],{ type: 'application/json' })
+        const { cid } = await client.add(file)
+        console.log(cid.toString())
+        return cid
+    }
+
+	const mintNft = async () => {
+		const ipfsId = await uploadToIpfs()
+		const signer = await library.getSigner()
+		const contract = new ethers.Contract(DEPLOYED_ADDRESS, ABI, signer)
+		console.log(contract)
+		const tx = await contract.safeMint(account, ipfsId.toString())
+		if(tx){
+			await tx.wait()
+			console.log(tx)
+		}
 	}
 
 	return(
@@ -126,7 +156,9 @@ const Home: NextPage = () => {
 				<Textarea placeholder='Describe your NFT' ref={descriptionInputRef}/>
 			</Stack>
 			<Stack px={{ base: 4 }}>
-				<Button disabled={!active}>Generate NFT</Button>
+				<Button disabled={!active} onClick={mintNft}>
+					{ active ? 'Generate NFT' : 'Please connect your wallet'}
+				</Button>
 			</Stack>
 		</Box>
 	)
