@@ -4,7 +4,7 @@ import { useWeb3React, Web3ReactProvider } from '@web3-react/core'
 import { WalletConnectConnector, URI_AVAILABLE } from '@web3-react/walletconnect-connector'
 import { Spinner } from '@chakra-ui/react'
 
-const injected = new InjectedConnector({
+export const injected = new InjectedConnector({
     supportedChainIds: [1, 137, 80001]
 })
 

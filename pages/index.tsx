@@ -2,6 +2,8 @@ import type { NextPage } from 'next'
 import { LegacyRef, useEffect, useRef, useState } from 'react'
 import { Box, Button, Heading, HStack, Icon, Img, Input, Stack, Text, Textarea, VStack } from '@chakra-ui/react'
 import { HiCloudUpload } from 'react-icons/hi'
+import { useWeb3React } from '@web3-react/core'
+import { injected, walletConnect } from '../src/providers/DAppProvider'
 
 const Home: NextPage = () => {
 	
@@ -11,12 +13,32 @@ const Home: NextPage = () => {
 	const fileInputRef = useRef<HTMLInputElement>(null)
 	const canvasRef = useRef<HTMLCanvasElement>(null)
 	const titleInputRef = useRef<HTMLInputElement>(null)
-	const descriptionInputRef = useRef<HTMLInputElement>(null)
+	const descriptionInputRef = useRef<HTMLTextAreaElement>(null)
 	
+	const { activate, active, account } = useWeb3React()
+
 	useEffect(() => {
 		// @ts-ignore
 		renderCanvas(canvasRef.current)
 	}, [preview, canvasRef])
+
+	const connectMobile = async () => {
+		try {
+			await activate(walletConnect)
+		}
+		catch(err){
+			console.log(err)
+		}
+	}
+
+	const connectBrowser = async () => {
+		try {
+			await activate(injected)
+		}
+		catch(err){
+			console.log(err)
+		}
+	}
 
 	const renderCanvas = (canvas: HTMLCanvasElement) => {
 		const ctx = canvas.getContext('2d')
@@ -51,7 +73,11 @@ const Home: NextPage = () => {
 		<Box overflowX={'hidden'}>
 			<HStack px={{ base: 4 }} py={{ base: 4 }} justifyContent={'space-between'}>
 				<Heading letterSpacing={'wider'}>pixel.mint</Heading>
-				<Button>Connect Wallet</Button>
+				{
+					active && account ?
+					<Text>{account?.slice(0,9)}...{account?.slice(-9)}</Text> :
+					<Button onClick={connectMobile}>Connect Wallet</Button> 
+				}
 			</HStack>
 			{
 				!finalImage &&
@@ -96,11 +122,11 @@ const Home: NextPage = () => {
 				}
 			</Box>
 			<Stack px={{ base: 4 }} py={{ base: 4 }} spacing={'4'}>
-				<Input type={'text'} placeholder={'Name your NFT'} border={'2px'}/>
-				<Textarea placeholder='Describe your NFT'/>
+				<Input type={'text'} placeholder={'Name your NFT'} border={'2px'} ref={titleInputRef}/>
+				<Textarea placeholder='Describe your NFT' ref={descriptionInputRef}/>
 			</Stack>
 			<Stack px={{ base: 4 }}>
-				<Button>Generate NFT</Button>
+				<Button disabled={!active}>Generate NFT</Button>
 			</Stack>
 		</Box>
 	)
