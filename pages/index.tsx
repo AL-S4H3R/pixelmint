@@ -1,6 +1,6 @@
 import type { NextPage } from 'next'
 import { LegacyRef, useEffect, useRef, useState } from 'react'
-import { Box, Button, Heading, HStack, Icon, Img, Input, Stack, Text, Textarea, VStack } from '@chakra-ui/react'
+import { Box, Button, Heading, HStack, Icon, Img, Input, Slider, SliderFilledTrack, SliderThumb, SliderTrack, Stack, Text, Textarea, VStack } from '@chakra-ui/react'
 import { HiCloudUpload } from 'react-icons/hi'
 import { useWeb3React } from '@web3-react/core'
 import { injected, walletConnect } from '../src/providers/DAppProvider'
@@ -13,6 +13,7 @@ const Home: NextPage = () => {
 	const [preview, setPreview] = useState('')
 	const [finalImage, setFinalImage] = useState('')
 	const [tokenUri, setTokenUri] = useState('')
+	const [pixels, setPixels] = useState(40)
 
 	const fileInputRef = useRef<HTMLInputElement>(null)
 	const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -24,7 +25,7 @@ const Home: NextPage = () => {
 	useEffect(() => {
 		// @ts-ignore
 		renderCanvas(canvasRef.current)
-	}, [preview, canvasRef])
+	}, [preview, canvasRef, pixels])
 
 	const connectMobile = async () => {
 		try {
@@ -47,7 +48,7 @@ const Home: NextPage = () => {
 	const renderCanvas = (canvas: HTMLCanvasElement) => {
 		const ctx = canvas.getContext('2d')
 		if(ctx){
-			const pixelRatio = 40 / 128
+			const pixelRatio = pixels / 128
 			let w = 500 * pixelRatio
 			let h = 500 * pixelRatio
 			const img = new Image()
@@ -58,9 +59,6 @@ const Home: NextPage = () => {
 				const result = await ctx.drawImage(canvas, 0, 0, w, h, 0, 0, 500, 500)
 				// @ts-ignore
 				const pixelatedImage = canvas.toDataURL()
-				canvas.toBlob((blob) => {
-					uploadToIpfs(blob!)
-				})
 				console.log(pixelatedImage)
 				setFinalImage(pixelatedImage)
 			}
@@ -94,19 +92,26 @@ const Home: NextPage = () => {
 			const file = new Blob([JSON.stringify(metadata)],{ type: 'application/json' })
 			const { cid } = await client.add(file)
 			console.log(cid.toString())
-			setTokenUri(`ipfs://${cid.toString()}`)
+			return `ipfs://${cid.toString()}`
 		}
     }
 
 	const mintNft = async () => {
-		const signer = await library.getSigner()
-		const contract = new ethers.Contract(DEPLOYED_ADDRESS, ABI, signer)
-		console.log(contract)
-		const tx = await contract.safeMint(account, tokenUri)
-		if(tx){
-			await tx.wait()
-			console.log(tx)
-		}
+		let tokenUri: string
+		canvasRef.current?.toBlob(async (blob) => {
+			if(blob){
+				// @ts-ignore
+				tokenUri = await uploadToIpfs(blob!)
+				const signer = await library.getSigner()
+				const contract = new ethers.Contract(DEPLOYED_ADDRESS, ABI, signer)
+				console.log(contract)
+				const tx = await contract.safeMint(account, tokenUri)
+				if(tx){
+					await tx.wait()
+					console.log(tx)
+				}
+			}
+		})
 	}
 
 	return(
@@ -167,6 +172,13 @@ const Home: NextPage = () => {
 				}
 			</Box>
 			<Stack px={{ base: 4 }} py={{ base: 4 }} spacing={'4'}>
+				<Slider value={pixels} onChange={(e) => setPixels(e)}>
+					<SliderTrack>
+						<Box position={'relative'} right={10}/>
+						<SliderFilledTrack />
+					</SliderTrack>
+					<SliderThumb boxSize={6}/>
+				</Slider>
 				<Input type={'text'} placeholder={'Name your NFT'} border={'2px'} ref={titleInputRef}/>
 				<Textarea placeholder='Describe your NFT' ref={descriptionInputRef}/>
 			</Stack>
