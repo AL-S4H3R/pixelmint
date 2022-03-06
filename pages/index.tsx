@@ -157,7 +157,12 @@ const Home: NextPage = () => {
 					finalImage &&
 					<Stack>
 						<Img src={finalImage} width={'full'} h={'full'} rounded={'xl'}/>
-						<Button w={"full"}>Change Image</Button>
+						<Button w={"full"} onClick={(e) => {
+							e.preventDefault()
+							fileInputRef.current?.click()
+						}}>
+							Change Image
+						</Button>
 					</Stack>
 				}
 			</Box>
