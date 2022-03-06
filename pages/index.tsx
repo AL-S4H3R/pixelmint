@@ -14,6 +14,8 @@ const Home: NextPage = () => {
 	const [finalImage, setFinalImage] = useState('')
 	const [tokenUri, setTokenUri] = useState('')
 	const [pixels, setPixels] = useState(40)
+	const [openseaUrl, setOpenseaUrl] = useState('')
+	const [loading, setLoading] = useState(false)
 
 	const fileInputRef = useRef<HTMLInputElement>(null)
 	const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -28,21 +30,25 @@ const Home: NextPage = () => {
 	}, [preview, canvasRef, pixels])
 
 	const connectMobile = async () => {
+		setLoading(true)
 		try {
 			await activate(walletConnect)
 		}
 		catch(err){
 			console.log(err)
 		}
+		setLoading(false)
 	}
 
 	const connectBrowser = async () => {
+		setLoading(true)
 		try {
 			await activate(injected)
 		}
 		catch(err){
 			console.log(err)
 		}
+		setLoading(false)
 	}
 
 	const renderCanvas = (canvas: HTMLCanvasElement) => {
@@ -102,16 +108,25 @@ const Home: NextPage = () => {
 			if(blob){
 				// @ts-ignore
 				tokenUri = await uploadToIpfs(blob!)
+				setLoading(true)
 				const signer = await library.getSigner()
 				const contract = new ethers.Contract(DEPLOYED_ADDRESS, ABI, signer)
 				console.log(contract)
 				const tx = await contract.safeMint(account, tokenUri)
 				if(tx){
-					await tx.wait()
-					console.log(tx)
+					const receipt = await tx.wait()
+					if(receipt){
+						console.log('Receipt: ', receipt)
+						const tokenId = ethers.BigNumber.from(receipt.events[0].args[2]).toString()
+						const opensea = `https://testnets.opensea.io/assets/mumbai/0xc3655d30081fce15ee346cbce1c86cb40338b810/${tokenId}`
+						setOpenseaUrl(opensea)
+						setLoading(false)
+						// console.log('Token id: ', ethers.BigNumber.from(receipt.events[0].args[2]).toString())
+					}
 				}
 			}
 		})
+		setLoading(false)
 	}
 
 	return(
@@ -121,7 +136,7 @@ const Home: NextPage = () => {
 				{
 					active && account ?
 					<Text>{account?.slice(0,9)}...{account?.slice(-9)}</Text> :
-					<Button onClick={connectMobile}>Connect Wallet</Button> 
+					<Button onClick={connectBrowser}>Connect Wallet</Button> 
 				}
 			</HStack>
 			{
@@ -182,10 +197,16 @@ const Home: NextPage = () => {
 				<Input type={'text'} placeholder={'Name your NFT'} border={'2px'} ref={titleInputRef}/>
 				<Textarea placeholder='Describe your NFT' ref={descriptionInputRef}/>
 			</Stack>
-			<Stack px={{ base: 4 }}>
-				<Button disabled={!active} onClick={mintNft}>
+			<Stack px={{ base: 4 }} spacing={4}>
+				<Button disabled={!active} onClick={mintNft} isLoading={loading}>
 					{ active ? 'Generate NFT' : 'Please connect your wallet'}
 				</Button>
+				{
+					openseaUrl !== '' &&
+					<Button bgColor={'blue.500'} color={'white'} as='a' href={openseaUrl}>
+						View on Opensea
+					</Button>
+				}
 			</Stack>
 		</Box>
 	)
