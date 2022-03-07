@@ -136,7 +136,7 @@ const Home: NextPage = () => {
 				{
 					active && account ?
 					<Text>{account?.slice(0,9)}...{account?.slice(-9)}</Text> :
-					<Button onClick={connectBrowser}>Connect Wallet</Button> 
+					<Button onClick={connectMobile}>Connect Wallet</Button> 
 				}
 			</HStack>
 			{
